@@ -1,0 +1,76 @@
+# Create namespaces
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: development
+---
+# Backend pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend
+  namespace: production
+  labels:
+    app: backend
+    tier: api
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+---
+# Frontend pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+  namespace: production
+  labels:
+    app: frontend
+    tier: web
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 3600']
+---
+# Test pod (unauthorized)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+  namespace: production
+  labels:
+    app: test
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    command: ['sh', '-c', 'sleep 3600']
+---
+# Network Policy - Allow only frontend to backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-policy
+  namespace: production
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 80
